@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-docmiral",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "n8n community node for DocMiral — document generation, AI filling, PDF export, and e-signatures",
   "keywords": [
     "n8n-community-node-package",
@@ -28,7 +28,7 @@
     "type": "git",
     "url": "https://github.com/DocMiral/n8n-nodes-docmiral"
   },
-  "main": "index.js",
+  "main": "dist/nodes/Docmiral/Docmiral.node.js",
   "scripts": {
     "build": "tsc && npm run copy-assets",
     "copy-assets": "cp nodes/Docmiral/docmiral.png nodes/Docmiral/docmiral.svg dist/nodes/Docmiral/",
