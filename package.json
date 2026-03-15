@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-docmiral",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "n8n community node for DocMiral — document generation, AI filling, PDF export, and e-signatures",
   "keywords": [
     "n8n-community-node-package",
