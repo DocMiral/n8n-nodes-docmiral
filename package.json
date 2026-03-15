@@ -28,7 +28,7 @@
     "type": "git",
     "url": "https://github.com/DocMiral/n8n-nodes-docmiral"
   },
-  "main": "dist/nodes/Docmiral/Docmiral.node.js",
+  "main": "index.js",
   "scripts": {
     "build": "tsc && npm run copy-assets",
     "copy-assets": "cp nodes/Docmiral/docmiral.png nodes/Docmiral/docmiral.svg dist/nodes/Docmiral/",
