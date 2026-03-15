@@ -643,7 +643,7 @@ export class Docmiral implements INodeType {
 					if (buildSource === 'direct' && !this.getNodeParameter('keepDocument', i, true)) {
 						await docmiralRequest(this, 'DELETE', `/entities/${id}`);
 					}
-					returnData.push({ json: { url, documentId: id }, binary: { data: binaryData } });
+					returnData.push({ json: { url, documentId: id }, binary: { data: binaryData }, pairedItem: { item: i } });
 					continue;
 				} else if (operation === 'buildPptx') {
 					const buildSource = this.getNodeParameter('buildSource', i) as string;
@@ -662,7 +662,7 @@ export class Docmiral implements INodeType {
 					if (buildSource === 'direct' && !this.getNodeParameter('keepDocument', i, true)) {
 						await docmiralRequest(this, 'DELETE', `/entities/${id}`);
 					}
-					returnData.push({ json: { url, documentId: id }, binary: { data: binaryData } });
+					returnData.push({ json: { url, documentId: id }, binary: { data: binaryData }, pairedItem: { item: i } });
 					continue;
 				} else if (operation === 'buildImage') {
 					const buildSource = this.getNodeParameter('buildSource', i) as string;
@@ -682,7 +682,7 @@ export class Docmiral implements INodeType {
 					if (buildSource === 'direct' && !this.getNodeParameter('keepDocument', i, true)) {
 						await docmiralRequest(this, 'DELETE', `/entities/${id}`);
 					}
-					returnData.push({ json: { url, documentId: id, page }, binary: { data: binaryData } });
+					returnData.push({ json: { url, documentId: id, page }, binary: { data: binaryData }, pairedItem: { item: i } });
 					continue;
 				} else if (operation === 'clone') {
 					const id = this.getNodeParameter('entityId', i) as string;
@@ -743,7 +743,7 @@ export class Docmiral implements INodeType {
 					const url = (res.data as IDataObject).url as string;
 					const buffer = await downloadBinary(this, url);
 					const binaryData = await this.helpers.prepareBinaryData(buffer, `template-${id}.pdf`, 'application/pdf');
-					returnData.push({ json: { url, templateId: id }, binary: { data: binaryData } });
+					returnData.push({ json: { url, templateId: id }, binary: { data: binaryData }, pairedItem: { item: i } });
 					continue;
 				} else if (operation === 'buildImage') {
 					const id = this.getNodeParameter('templateId', i) as string;
@@ -753,7 +753,7 @@ export class Docmiral implements INodeType {
 						const url = list[p];
 						const buffer = await downloadBinary(this, url);
 						const binaryData = await this.helpers.prepareBinaryData(buffer, `template-${id}-p${p + 1}.png`, 'image/png');
-						returnData.push({ json: { url, templateId: id, page: p + 1 }, binary: { data: binaryData } });
+						returnData.push({ json: { url, templateId: id, page: p + 1 }, binary: { data: binaryData }, pairedItem: { item: i } });
 					}
 					continue;
 				} else if (operation === 'getSchema') {
@@ -839,7 +839,7 @@ export class Docmiral implements INodeType {
 
 			// Normalise array vs single object responses
 			const items_ = Array.isArray(responseData) ? responseData : [responseData as IDataObject];
-			returnData.push(...items_.map((item) => ({ json: item })));
+			returnData.push(...items_.map((item, i) => ({ json: item, pairedItem: { item: i } })));
 		}
 
 		return [returnData];
