@@ -19,16 +19,16 @@ async function docmiralRequest(ctx, method, path, body, qs) {
 async function downloadBinary(ctx, url) {
     return Buffer.from(await ctx.helpers.httpRequest({ method: 'GET', url, encoding: 'arraybuffer' }));
 }
-async function buildDocumentBody(ctx, i, prefix) {
-    const templateId = ctx.getNodeParameter(`${prefix}TemplateId`, i);
-    const name = ctx.getNodeParameter(`${prefix}Name`, i, '');
-    const init = ctx.getNodeParameter(`${prefix}Init`, i, false);
+async function buildDocumentBody(ctx, idx, prefix) {
+    const templateId = ctx.getNodeParameter(`${prefix}TemplateId`, idx);
+    const name = ctx.getNodeParameter(`${prefix}Name`, idx, '');
+    const init = ctx.getNodeParameter(`${prefix}Init`, idx, false);
     const body = { templateId, init };
     if (name)
         body.name = name;
     if (!init) {
-        const dataJson = ctx.getNodeParameter(`${prefix}DataJson`, i, '{}');
-        const settingsJson = ctx.getNodeParameter(`${prefix}SettingsJson`, i, '{}');
+        const dataJson = ctx.getNodeParameter(`${prefix}DataJson`, idx, '{}');
+        const settingsJson = ctx.getNodeParameter(`${prefix}SettingsJson`, idx, '{}');
         const data = typeof dataJson === 'string' ? JSON.parse(dataJson) : dataJson;
         const settings = typeof settingsJson === 'string' ? JSON.parse(settingsJson) : settingsJson;
         const hasData = Object.keys(data).length > 0;
@@ -527,31 +527,31 @@ class Docmiral {
         var _a, _b, _c;
         const items = this.getInputData();
         const returnData = [];
-        for (let i = 0; i < items.length; i++) {
-            const resource = this.getNodeParameter('resource', i);
-            const operation = this.getNodeParameter('operation', i);
+        for (let idx = 0; idx < items.length; idx++) {
+            const resource = this.getNodeParameter('resource', idx);
+            const operation = this.getNodeParameter('operation', idx);
             let responseData;
             // ── DOCUMENT ─────────────────────────────────────────────────────
             if (resource === 'document') {
                 if (operation === 'list') {
-                    const limit = this.getNodeParameter('limit', i);
-                    const offset = this.getNodeParameter('offset', i);
+                    const limit = this.getNodeParameter('limit', idx);
+                    const offset = this.getNodeParameter('offset', idx);
                     responseData = await docmiralRequest(this, 'GET', '/entities', undefined, { limit, offset });
                 }
                 else if (operation === 'get') {
-                    const id = this.getNodeParameter('entityId', i);
+                    const id = this.getNodeParameter('entityId', idx);
                     responseData = await docmiralRequest(this, 'GET', `/entities/${id}`);
                 }
                 else if (operation === 'create') {
-                    const templateId = this.getNodeParameter('templateId', i);
-                    const name = this.getNodeParameter('name', i);
-                    const init = this.getNodeParameter('init', i);
+                    const templateId = this.getNodeParameter('templateId', idx);
+                    const name = this.getNodeParameter('name', idx);
+                    const init = this.getNodeParameter('init', idx);
                     const body = { templateId, init };
                     if (name)
                         body.name = name;
                     if (!init) {
-                        const dataJson = this.getNodeParameter('dataJson', i, '{}');
-                        const settingsJson = this.getNodeParameter('settingsJson', i, '{}');
+                        const dataJson = this.getNodeParameter('dataJson', idx, '{}');
+                        const settingsJson = this.getNodeParameter('settingsJson', idx, '{}');
                         const data = typeof dataJson === 'string' ? JSON.parse(dataJson) : dataJson;
                         const settings = typeof settingsJson === 'string' ? JSON.parse(settingsJson) : settingsJson;
                         const hasData = Object.keys(data).length > 0;
@@ -566,81 +566,81 @@ class Docmiral {
                     responseData = await docmiralRequest(this, 'POST', '/entities/', body);
                 }
                 else if (operation === 'update') {
-                    const id = this.getNodeParameter('entityId', i);
-                    const dataJson = this.getNodeParameter('dataJson', i);
+                    const id = this.getNodeParameter('entityId', idx);
+                    const dataJson = this.getNodeParameter('dataJson', idx);
                     const data = typeof dataJson === 'string' ? JSON.parse(dataJson) : dataJson;
                     responseData = await docmiralRequest(this, 'PUT', `/entities/${id}`, { data });
                 }
                 else if (operation === 'delete') {
-                    const id = this.getNodeParameter('entityId', i);
+                    const id = this.getNodeParameter('entityId', idx);
                     responseData = await docmiralRequest(this, 'DELETE', `/entities/${id}`);
                 }
                 else if (operation === 'buildPdf') {
-                    const buildSource = this.getNodeParameter('buildSource', i);
+                    const buildSource = this.getNodeParameter('buildSource', idx);
                     let id;
                     if (buildSource === 'direct') {
-                        const body = await buildDocumentBody(this, i, 'build');
+                        const body = await buildDocumentBody(this, idx, 'build');
                         const created = await docmiralRequest(this, 'POST', '/entities/', body);
                         id = created.data.id;
                     }
                     else {
-                        id = this.getNodeParameter('buildEntityId', i);
+                        id = this.getNodeParameter('buildEntityId', idx);
                     }
                     const res = await docmiralRequest(this, 'POST', `/entities/${id}/build/pdf`);
                     const url = res.data.url;
                     const buffer = await downloadBinary(this, url);
                     const binaryData = await this.helpers.prepareBinaryData(buffer, `document-${id}.pdf`, 'application/pdf');
-                    if (buildSource === 'direct' && !this.getNodeParameter('keepDocument', i, true)) {
+                    if (buildSource === 'direct' && !this.getNodeParameter('keepDocument', idx, true)) {
                         await docmiralRequest(this, 'DELETE', `/entities/${id}`);
                     }
-                    returnData.push({ json: { url, documentId: id }, binary: { data: binaryData }, pairedItem: { item: i } });
+                    returnData.push({ json: { url, documentId: id }, binary: { data: binaryData }, pairedItem: { item: idx } });
                     continue;
                 }
                 else if (operation === 'buildPptx') {
-                    const buildSource = this.getNodeParameter('buildSource', i);
+                    const buildSource = this.getNodeParameter('buildSource', idx);
                     let id;
                     if (buildSource === 'direct') {
-                        const body = await buildDocumentBody(this, i, 'build');
+                        const body = await buildDocumentBody(this, idx, 'build');
                         const created = await docmiralRequest(this, 'POST', '/entities/', body);
                         id = created.data.id;
                     }
                     else {
-                        id = this.getNodeParameter('buildEntityId', i);
+                        id = this.getNodeParameter('buildEntityId', idx);
                     }
                     const res = await docmiralRequest(this, 'POST', `/entities/${id}/build/pptx`);
                     const url = res.data.url;
                     const buffer = await downloadBinary(this, url);
                     const binaryData = await this.helpers.prepareBinaryData(buffer, `document-${id}.pptx`, 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
-                    if (buildSource === 'direct' && !this.getNodeParameter('keepDocument', i, true)) {
+                    if (buildSource === 'direct' && !this.getNodeParameter('keepDocument', idx, true)) {
                         await docmiralRequest(this, 'DELETE', `/entities/${id}`);
                     }
-                    returnData.push({ json: { url, documentId: id }, binary: { data: binaryData }, pairedItem: { item: i } });
+                    returnData.push({ json: { url, documentId: id }, binary: { data: binaryData }, pairedItem: { item: idx } });
                     continue;
                 }
                 else if (operation === 'buildImage') {
-                    const buildSource = this.getNodeParameter('buildSource', i);
+                    const buildSource = this.getNodeParameter('buildSource', idx);
                     let id;
                     if (buildSource === 'direct') {
-                        const body = await buildDocumentBody(this, i, 'build');
+                        const body = await buildDocumentBody(this, idx, 'build');
                         const created = await docmiralRequest(this, 'POST', '/entities/', body);
                         id = created.data.id;
                     }
                     else {
-                        id = this.getNodeParameter('buildEntityId', i);
+                        id = this.getNodeParameter('buildEntityId', idx);
                     }
-                    const page = this.getNodeParameter('page', i);
+                    const page = this.getNodeParameter('page', idx);
                     const res = await docmiralRequest(this, 'POST', `/entities/${id}/build/image`, { page });
                     const url = res.data.url;
                     const buffer = await downloadBinary(this, url);
                     const binaryData = await this.helpers.prepareBinaryData(buffer, `document-${id}-p${page}.png`, 'image/png');
-                    if (buildSource === 'direct' && !this.getNodeParameter('keepDocument', i, true)) {
+                    if (buildSource === 'direct' && !this.getNodeParameter('keepDocument', idx, true)) {
                         await docmiralRequest(this, 'DELETE', `/entities/${id}`);
                     }
-                    returnData.push({ json: { url, documentId: id, page }, binary: { data: binaryData }, pairedItem: { item: i } });
+                    returnData.push({ json: { url, documentId: id, page }, binary: { data: binaryData }, pairedItem: { item: idx } });
                     continue;
                 }
                 else if (operation === 'clone') {
-                    const id = this.getNodeParameter('entityId', i);
+                    const id = this.getNodeParameter('entityId', idx);
                     responseData = await docmiralRequest(this, 'POST', `/entities/${id}/clone`);
                 }
                 else {
@@ -650,10 +650,10 @@ class Docmiral {
             // ── TEMPLATE ──────────────────────────────────────────────────────
             else if (resource === 'template') {
                 if (operation === 'list') {
-                    const limit = this.getNodeParameter('limit', i);
-                    const offset = this.getNodeParameter('offset', i);
-                    const templateListCategoryId = this.getNodeParameter('templateListCategoryId', i, '');
-                    const templateLibrary = this.getNodeParameter('templateLibrary', i, 'public');
+                    const limit = this.getNodeParameter('limit', idx);
+                    const offset = this.getNodeParameter('offset', idx);
+                    const templateListCategoryId = this.getNodeParameter('templateListCategoryId', idx, '');
+                    const templateLibrary = this.getNodeParameter('templateLibrary', idx, 'public');
                     const templateListQs = { limit, offset };
                     if (templateListCategoryId)
                         templateListQs.categoryId = templateListCategoryId;
@@ -662,14 +662,14 @@ class Docmiral {
                     responseData = await docmiralRequest(this, 'GET', '/templates', undefined, templateListQs);
                 }
                 else if (operation === 'get') {
-                    const id = this.getNodeParameter('templateId', i);
+                    const id = this.getNodeParameter('templateId', idx);
                     responseData = await docmiralRequest(this, 'GET', `/templates/${id}`);
                 }
                 else if (operation === 'create') {
-                    const name = this.getNodeParameter('templateName', i);
-                    const categoryId = this.getNodeParameter('categoryId', i);
-                    const html = this.getNodeParameter('templateHtml', i);
-                    const settingsRaw = this.getNodeParameter('templateSettings', i);
+                    const name = this.getNodeParameter('templateName', idx);
+                    const categoryId = this.getNodeParameter('categoryId', idx);
+                    const html = this.getNodeParameter('templateHtml', idx);
+                    const settingsRaw = this.getNodeParameter('templateSettings', idx);
                     const settings = typeof settingsRaw === 'string' ? JSON.parse(settingsRaw) : settingsRaw;
                     const body = {};
                     if (name)
@@ -683,8 +683,8 @@ class Docmiral {
                     responseData = await docmiralRequest(this, 'POST', '/templates/', body);
                 }
                 else if (operation === 'update') {
-                    const id = this.getNodeParameter('templateId', i);
-                    const fields = this.getNodeParameter('updateFields', i);
+                    const id = this.getNodeParameter('templateId', idx);
+                    const fields = this.getNodeParameter('updateFields', idx);
                     const body = {};
                     for (const [key, val] of Object.entries(fields)) {
                         if (val === '' || val === null || val === undefined)
@@ -699,41 +699,41 @@ class Docmiral {
                     responseData = await docmiralRequest(this, 'PUT', `/templates/${id}`, body);
                 }
                 else if (operation === 'delete') {
-                    const id = this.getNodeParameter('templateId', i);
+                    const id = this.getNodeParameter('templateId', idx);
                     responseData = await docmiralRequest(this, 'DELETE', `/templates/${id}`);
                 }
                 else if (operation === 'clone') {
-                    const id = this.getNodeParameter('templateId', i);
+                    const id = this.getNodeParameter('templateId', idx);
                     responseData = await docmiralRequest(this, 'POST', `/templates/${id}/clone`);
                 }
                 else if (operation === 'buildPdf') {
-                    const id = this.getNodeParameter('templateId', i);
+                    const id = this.getNodeParameter('templateId', idx);
                     const res = await docmiralRequest(this, 'POST', `/templates/${id}/build/pdf`);
                     const url = res.data.url;
                     const buffer = await downloadBinary(this, url);
                     const binaryData = await this.helpers.prepareBinaryData(buffer, `template-${id}.pdf`, 'application/pdf');
-                    returnData.push({ json: { url, templateId: id }, binary: { data: binaryData }, pairedItem: { item: i } });
+                    returnData.push({ json: { url, templateId: id }, binary: { data: binaryData }, pairedItem: { item: idx } });
                     continue;
                 }
                 else if (operation === 'buildImage') {
-                    const id = this.getNodeParameter('templateId', i);
+                    const id = this.getNodeParameter('templateId', idx);
                     const res = await docmiralRequest(this, 'POST', `/templates/${id}/build/image`);
                     const list = (_a = res.data.list) !== null && _a !== void 0 ? _a : [];
                     for (let p = 0; p < list.length; p++) {
                         const url = list[p];
                         const buffer = await downloadBinary(this, url);
                         const binaryData = await this.helpers.prepareBinaryData(buffer, `template-${id}-p${p + 1}.png`, 'image/png');
-                        returnData.push({ json: { url, templateId: id, page: p + 1 }, binary: { data: binaryData }, pairedItem: { item: i } });
+                        returnData.push({ json: { url, templateId: id, page: p + 1 }, binary: { data: binaryData }, pairedItem: { item: idx } });
                     }
                     continue;
                 }
                 else if (operation === 'getSchema') {
-                    const id = this.getNodeParameter('templateId', i);
-                    const schemaFormat = this.getNodeParameter('schemaFormat', i);
-                    const output = this.getNodeParameter('schemaOutput', i);
+                    const id = this.getNodeParameter('templateId', idx);
+                    const schemaFormat = this.getNodeParameter('schemaFormat', idx);
+                    const output = this.getNodeParameter('schemaOutput', idx);
                     const qs = { schemaFormat, output };
                     if (output === 'sample') {
-                        const defaultValue = this.getNodeParameter('defaultValue', i, false);
+                        const defaultValue = this.getNodeParameter('defaultValue', idx, false);
                         qs.defaultValue = defaultValue ? 'true' : 'false';
                     }
                     responseData = await docmiralRequest(this, 'GET', `/templates/schema/${id}`, undefined, qs);
@@ -745,20 +745,20 @@ class Docmiral {
             // ── TARS ──────────────────────────────────────────────────────────
             else if (resource === 'tars') {
                 if (operation === 'chat') {
-                    const entityId = this.getNodeParameter('entityId', i);
-                    const message = this.getNodeParameter('message', i);
+                    const entityId = this.getNodeParameter('entityId', idx);
+                    const message = this.getNodeParameter('message', idx);
                     responseData = await docmiralRequest(this, 'POST', '/tars/chat-layerer', {
                         entity_id: entityId,
                         message,
                     });
                 }
                 else if (operation === 'parseCV') {
-                    const binaryProperty = this.getNodeParameter('binaryProperty', i);
-                    const binaryData = items[i].binary;
+                    const binaryProperty = this.getNodeParameter('binaryProperty', idx);
+                    const binaryData = items[idx].binary;
                     if (!(binaryData === null || binaryData === void 0 ? void 0 : binaryData[binaryProperty])) {
                         throw new n8n_workflow_1.NodeOperationError(this.getNode(), `No binary data found at property "${binaryProperty}"`);
                     }
-                    const fileBuffer = await this.helpers.getBinaryDataBuffer(i, binaryProperty);
+                    const fileBuffer = await this.helpers.getBinaryDataBuffer(idx, binaryProperty);
                     const credentialsParseCV = await this.getCredentials('docmiralApi');
                     const baseUrlParseCV = credentialsParseCV.baseUrl.replace(/\/$/, '');
                     const form_parseCV = new FormData();
@@ -770,12 +770,12 @@ class Docmiral {
                     });
                 }
                 else if (operation === 'extractText') {
-                    const binaryProperty = this.getNodeParameter('binaryProperty', i);
-                    const binaryData = items[i].binary;
+                    const binaryProperty = this.getNodeParameter('binaryProperty', idx);
+                    const binaryData = items[idx].binary;
                     if (!(binaryData === null || binaryData === void 0 ? void 0 : binaryData[binaryProperty])) {
                         throw new n8n_workflow_1.NodeOperationError(this.getNode(), `No binary data found at property "${binaryProperty}"`);
                     }
-                    const fileBuffer = await this.helpers.getBinaryDataBuffer(i, binaryProperty);
+                    const fileBuffer = await this.helpers.getBinaryDataBuffer(idx, binaryProperty);
                     const credentialsExtract = await this.getCredentials('docmiralApi');
                     const baseUrlExtract = credentialsExtract.baseUrl.replace(/\/$/, '');
                     const form_extractText = new FormData();
@@ -787,9 +787,9 @@ class Docmiral {
                     });
                 }
                 else if (operation === 'smartClone') {
-                    const entityId = this.getNodeParameter('entityId', i);
-                    const message = this.getNodeParameter('message', i);
-                    const category = this.getNodeParameter('category', i);
+                    const entityId = this.getNodeParameter('entityId', idx);
+                    const message = this.getNodeParameter('message', idx);
+                    const category = this.getNodeParameter('category', idx);
                     responseData = await docmiralRequest(this, 'POST', '/tars/smartclone', {
                         entity_id: entityId,
                         message,
@@ -813,7 +813,7 @@ class Docmiral {
             }
             // Normalise array vs single object responses
             const items_ = Array.isArray(responseData) ? responseData : [responseData];
-            returnData.push(...items_.map((item, i) => ({ json: item, pairedItem: { item: i } })));
+            returnData.push(...items_.map((item) => ({ json: item, pairedItem: { item: idx } })));
         }
         return [returnData];
     }
