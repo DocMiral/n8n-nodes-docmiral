@@ -128,21 +128,6 @@ Manage reusable document templates.
 
 ---
 
-### TARS (AI)
-
-AI-powered operations for document intelligence.
-
-| Operation | Description |
-|---|---|
-| **Chat (Fill Document)** | Send a natural language message to TARS to fill a document's fields (e.g. `"Name is Alice, she works at Google"`) |
-| **Parse CV** | Upload a CV/resume PDF and receive structured JSON data |
-| **Extract Text** | Upload any file and extract its raw text content |
-| **Smart Clone** | Clone a document using AI to adapt its content based on a message prompt |
-
-> **Parse CV**, **Extract Text**, and **Smart Clone** require binary input from a previous node (e.g. Read Binary File, HTTP Request, or Google Drive).
-
----
-
 ### Category
 
 | Operation | Description |
