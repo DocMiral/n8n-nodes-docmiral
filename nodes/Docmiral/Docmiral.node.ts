@@ -4,10 +4,9 @@ import type {
 	INodeType,
 	INodeTypeDescription,
 	IDataObject,
-	IBinaryKeyData,
 	IHttpRequestMethods,
 } from 'n8n-workflow';
-import { NodeOperationError } from 'n8n-workflow';
+import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -75,8 +74,8 @@ export class Docmiral implements INodeType {
 		subtitle: '={{$parameter["resource"] + ": " + $parameter["operation"]}}',
 		description: 'Interact with the DocMiral document generation platform',
 		defaults: { name: 'DocMiral' },
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [{ name: 'docmiralApi', required: true }],
 		properties: [
 			// ── resource ──────────────────────────────────────────────────────
@@ -86,10 +85,9 @@ export class Docmiral implements INodeType {
 				type: 'options',
 				noDataExpression: true,
 				options: [
+					{ name: 'Category', value: 'category' },
 					{ name: 'Document', value: 'document' },
 					{ name: 'Template', value: 'template' },
-					// { name: 'TARS (AI)', value: 'tars' },
-					{ name: 'Category', value: 'category' },
 				],
 				default: 'document',
 			},
@@ -136,21 +134,6 @@ export class Docmiral implements INodeType {
 				default: 'list',
 			},
 
-			// ── tars operations ───────────────────────────────────────────────
-			{
-				displayName: 'Operation',
-				name: 'operation',
-				type: 'options',
-				noDataExpression: true,
-				displayOptions: { show: { resource: ['tars'] } },
-				options: [
-					{ name: 'Chat (Fill Document)', value: 'chat', action: 'Use AI to fill a document' },
-					{ name: 'Parse CV', value: 'parseCV', action: 'Parse a CV PDF into structured data' },
-					{ name: 'Extract Text', value: 'extractText', action: 'Extract text from a file' },
-					{ name: 'Smart Clone', value: 'smartClone', action: 'Ai powered smart clone of a document' },
-				],
-				default: 'chat',
-			},
 
 			// ── category operations ──────────────────────────────────────────────
 			{
@@ -525,53 +508,6 @@ export class Docmiral implements INodeType {
 				description: 'Whether to include default/sample values in the output',
 			},
 
-			// ══════════════════════════════════════════════════════════════════
-			// TARS fields
-			// ══════════════════════════════════════════════════════════════════
-
-			// chat
-			{
-				displayName: 'Document ID',
-				name: 'entityId',
-				type: 'string',
-				default: '',
-				required: true,
-				displayOptions: { show: { resource: ['tars'], operation: ['chat', 'smartClone'] } },
-			},
-			{
-				displayName: 'Message',
-				name: 'message',
-				type: 'string',
-				typeOptions: { rows: 4 },
-				default: '',
-				required: true,
-				displayOptions: { show: { resource: ['tars'], operation: ['chat', 'smartClone'] } },
-				description: 'Natural language instruction for TARS (e.g. "Name is Alice, she works at Google")',
-			},
-
-			// parseCV / extractText
-			{
-				displayName: 'Binary Property',
-				name: 'binaryProperty',
-				type: 'string',
-				default: 'data',
-				required: true,
-				displayOptions: {
-					show: { resource: ['tars'], operation: ['parseCV', 'extractText'] },
-				},
-				description: 'Name of the binary property containing the file to process',
-			},
-
-			// smartClone
-			{
-				displayName: 'Target Category',
-				name: 'category',
-				type: 'string',
-				default: '',
-				displayOptions: { show: { resource: ['tars'], operation: ['smartClone'] } },
-				description: 'Category for the cloned document',
-			},
-
 		],
 		usableAsTool: true,
 	};
@@ -583,6 +519,7 @@ export class Docmiral implements INodeType {
 		const returnData: INodeExecutionData[] = [];
 
 		for (let idx = 0; idx < items.length; idx++) {
+			try {
 			const resource = this.getNodeParameter('resource', idx) as string;
 			const operation = this.getNodeParameter('operation', idx) as string;
 
@@ -769,63 +706,6 @@ export class Docmiral implements INodeType {
 				} else {
 					throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`);
 				}
-			}
-
-
-
-			// ── TARS ──────────────────────────────────────────────────────────
-			else if (resource === 'tars') {
-				if (operation === 'chat') {
-					const entityId = this.getNodeParameter('entityId', idx) as string;
-					const message = this.getNodeParameter('message', idx) as string;
-					responseData = await docmiralRequest(this, 'POST', '/tars/chat-layerer', {
-						entity_id: entityId,
-						message,
-					});
-				} else if (operation === 'parseCV') {
-					const binaryProperty = this.getNodeParameter('binaryProperty', idx) as string;
-					const binaryData = items[idx].binary as IBinaryKeyData;
-					if (!binaryData?.[binaryProperty]) {
-						throw new NodeOperationError(this.getNode(), `No binary data found at property "${binaryProperty}"`);
-					}
-					const fileBuffer = await this.helpers.getBinaryDataBuffer(idx, binaryProperty);
-					const credentialsParseCV = await this.getCredentials('docmiralApi');
-					const baseUrlParseCV = (credentialsParseCV.baseUrl as string).replace(/\/$/, '');
-					const form_parseCV = new FormData();
-					form_parseCV.append('file', new Blob([fileBuffer], { type: binaryData[binaryProperty].mimeType }), binaryData[binaryProperty].fileName ?? 'resume.pdf');
-					responseData = await this.helpers.httpRequestWithAuthentication.call(this, 'docmiralApi', {
-						method: 'POST',
-						url: `${baseUrlParseCV}/tars/parse-cv`,
-						body: form_parseCV,
-					}) as IDataObject;
-				} else if (operation === 'extractText') {
-					const binaryProperty = this.getNodeParameter('binaryProperty', idx) as string;
-					const binaryData = items[idx].binary as IBinaryKeyData;
-					if (!binaryData?.[binaryProperty]) {
-						throw new NodeOperationError(this.getNode(), `No binary data found at property "${binaryProperty}"`);
-					}
-					const fileBuffer = await this.helpers.getBinaryDataBuffer(idx, binaryProperty);
-					const credentialsExtract = await this.getCredentials('docmiralApi');
-					const baseUrlExtract = (credentialsExtract.baseUrl as string).replace(/\/$/, '');
-					const form_extractText = new FormData();
-					form_extractText.append('file', new Blob([fileBuffer], { type: binaryData[binaryProperty].mimeType }), binaryData[binaryProperty].fileName ?? 'document.pdf');
-					responseData = await this.helpers.httpRequestWithAuthentication.call(this, 'docmiralApi', {
-						method: 'POST',
-						url: `${baseUrlExtract}/tars/extract-text`,
-						body: form_extractText,
-					}) as IDataObject;
-				} else if (operation === 'smartClone') {
-					const entityId = this.getNodeParameter('entityId', idx) as string;
-					const message = this.getNodeParameter('message', idx) as string;
-					const category = this.getNodeParameter('category', idx) as string;
-					responseData = await docmiralRequest(this, 'POST', '/tars/smartclone', {
-						entity_id: entityId,
-						message,
-						...(category ? { category } : {}),
-					});
-				} else {
-					throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`);
-				}
 			} else if (resource === 'category') {
 				if (operation === 'list') {
 					responseData = await docmiralRequest(this, 'GET', '/categories');
@@ -839,6 +719,13 @@ export class Docmiral implements INodeType {
 			// Normalise array vs single object responses
 			const items_ = Array.isArray(responseData) ? responseData : [responseData as IDataObject];
 			returnData.push(...items_.map((item) => ({ json: item, pairedItem: { item: idx } })));
+			} catch (error) {
+				if (this.continueOnFail()) {
+					returnData.push({ json: { error: (error as Error).message }, pairedItem: { item: idx } });
+					continue;
+				}
+				throw error;
+			}
 		}
 
 		return [returnData];

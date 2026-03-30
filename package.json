@@ -31,7 +31,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc && npm run copy-assets",
-    "copy-assets": "cp nodes/Docmiral/docmiral.png nodes/Docmiral/docmiral.svg dist/nodes/Docmiral/",
+    "copy-assets": "cp nodes/Docmiral/docmiral.png nodes/Docmiral/docmiral.svg dist/nodes/Docmiral/ && cp nodes/Docmiral/docmiral.png dist/credentials/",
     "dev": "tsc --watch",
     "lint": "eslint nodes --ext .ts",
     "prepublishOnly": "npm run build"
